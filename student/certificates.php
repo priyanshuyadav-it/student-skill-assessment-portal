@@ -9,6 +9,7 @@ requireStudent();
  * Fetch certificates and certificate-eligible results
  * belonging only to the logged-in student.
  */
+
 $query = "
     SELECT
         r.result_id,
@@ -59,7 +60,10 @@ $certificates = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <meta charset="UTF-8">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>My Certificates</title>
 
@@ -267,6 +271,7 @@ $certificates = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 </nav>
 
+
 <div class="container">
 
     <div class="page-header">
@@ -278,6 +283,7 @@ $certificates = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </p>
 
     </div>
+
 
     <?php if (count($certificates) > 0): ?>
 
@@ -291,28 +297,39 @@ $certificates = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         🏆
                     </div>
 
+
                     <h2>
+
                         <?php
+
                         echo htmlspecialchars(
                             $certificate["assessment_title"]
                         );
+
                         ?>
+
                     </h2>
+
 
                     <div class="skill">
 
                         Skill:
+
                         <?php
+
                         echo htmlspecialchars(
                             $certificate["skill_name"]
                         );
+
                         ?>
 
                     </div>
 
+
                     <span class="eligible">
                         ✓ Certificate Eligible
                     </span>
+
 
                     <div class="details">
 
@@ -325,22 +342,27 @@ $certificates = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <span class="detail-value">
 
                                 <?php
+
                                 echo htmlspecialchars(
                                     $certificate["obtained_marks"]
                                 );
+
                                 ?>
 
                                 /
 
                                 <?php
+
                                 echo htmlspecialchars(
                                     $certificate["total_marks"]
                                 );
+
                                 ?>
 
                             </span>
 
                         </div>
+
 
                         <div class="detail-row">
 
@@ -351,14 +373,17 @@ $certificates = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <span class="detail-value">
 
                                 <?php
+
                                 echo htmlspecialchars(
                                     $certificate["percentage"]
                                 );
+
                                 ?>%
 
                             </span>
 
                         </div>
+
 
                         <div class="detail-row">
 
@@ -374,20 +399,29 @@ $certificates = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     </div>
 
+
                     <?php if ($certificate["certificate_id"]): ?>
 
                         <div class="certificate-number">
 
                             Certificate No:
+
                             <strong>
+
                                 <?php
+
                                 echo htmlspecialchars(
                                     $certificate["certificate_number"]
                                 );
+
                                 ?>
+
                             </strong>
 
                         </div>
+
+
+                        <!-- Verify Certificate -->
 
                         <a
                             href="../certificates/verify.php?code=<?php echo urlencode($certificate["verification_code"]); ?>"
@@ -396,6 +430,17 @@ $certificates = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             Verify Certificate
                         </a>
 
+
+                        <!-- View Certificate -->
+
+                        <a
+                            href="../certificates/view.php?certificate=<?php echo urlencode($certificate["certificate_number"]); ?>"
+                            class="button secondary-button"
+                        >
+                            View Certificate
+                        </a>
+
+
                     <?php else: ?>
 
                         <div class="certificate-number">
@@ -403,6 +448,9 @@ $certificates = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             Your certificate has not been generated yet.
 
                         </div>
+
+
+                        <!-- Generate Certificate -->
 
                         <a
                             href="../certificates/generate.php?result_id=<?php echo (int) $certificate["result_id"]; ?>"
@@ -413,6 +461,9 @@ $certificates = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     <?php endif; ?>
 
+
+                    <!-- View Result -->
+
                     <a
                         href="result.php?result_id=<?php echo (int) $certificate["result_id"]; ?>"
                         class="button secondary-button"
@@ -420,13 +471,16 @@ $certificates = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         View Result
                     </a>
 
+
                 </div>
 
             <?php endforeach; ?>
 
         </div>
 
+
     <?php else: ?>
+
 
         <div class="empty-state">
 
@@ -434,14 +488,17 @@ $certificates = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 🏆
             </div>
 
+
             <h2>
                 No Certificates Available
             </h2>
+
 
             <p>
                 Complete and pass an assessment to become eligible
                 for a certificate.
             </p>
+
 
             <a
                 href="skills.php"
@@ -452,7 +509,9 @@ $certificates = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         </div>
 
+
     <?php endif; ?>
+
 
 </div>
 
