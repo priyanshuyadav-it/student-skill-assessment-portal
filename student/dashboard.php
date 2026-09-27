@@ -157,50 +157,63 @@ requireStudent();
 
     <div class="cards">
 
-        <div class="card">
+    <div class="card">
 
-            <h3>📚 Skills</h3>
+        <h3>📚 Skills</h3>
 
-            <p>
-                Explore available skills and assessments.
-            </p>
+        <p>
+            Explore available skills and assessments.
+        </p>
 
-            <a href="skills.php">
-                View Skills →
-            </a>
-
-        </div>
-
-        <div class="card">
-
-            <h3>📝 Assessments</h3>
-
-            <p>
-                Take assessments and evaluate your technical skills.
-            </p>
-
-            <a href="assessment.php">
-                View Assessments →
-            </a>
-
-        </div>
-
-        <div class="card">
-
-            <h3>🏆 Certificates</h3>
-
-            <p>
-                View and verify your earned certificates.
-            </p>
-
-            <a href="certificates.php">
-                My Certificates →
-            </a>
-
-        </div>
+        <a href="skills.php">
+            View Skills →
+        </a>
 
     </div>
 
+    <div class="card">
+
+        <h3>📝 Assessments</h3>
+
+        <p>
+            Take assessments and evaluate your technical skills.
+        </p>
+
+        <a href="assessment.php">
+            View Assessments →
+        </a>
+
+    </div>
+
+    <div class="card">
+
+        <h3>📊 My Results</h3>
+
+        <p>
+            View your assessment scores, performance, and results.
+        </p>
+
+        <a href="results.php">
+            View Results →
+        </a>
+
+    </div>
+
+    <div class="card">
+
+        <h3>🏆 Certificates</h3>
+
+        <p>
+            View and verify your earned certificates.
+        </p>
+
+        <a href="certificates.php">
+            My Certificates →
+        </a>
+
+    </div>
+
+</div>
 </div>
 
 </body>
