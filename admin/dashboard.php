@@ -11,40 +11,86 @@ $total_assessments = 0;
 $total_results = 0;
 $total_certificates = 0;
 
+$pass_count = 0;
+$fail_count = 0;
+
 try {
 
+    /* =========================
+       Dashboard Statistics
+    ========================== */
+
     $stmt = $pdo->query("
-        SELECT COUNT(*) 
-        FROM users 
+        SELECT COUNT(*)
+        FROM users
         WHERE role = 'student'
     ");
+
     $total_students = $stmt->fetchColumn();
 
+
     $stmt = $pdo->query("
-        SELECT COUNT(*) 
-        FROM skills 
+        SELECT COUNT(*)
+        FROM skills
         WHERE is_active = 1
     ");
+
     $total_skills = $stmt->fetchColumn();
 
+
     $stmt = $pdo->query("
-        SELECT COUNT(*) 
-        FROM assessments 
+        SELECT COUNT(*)
+        FROM assessments
         WHERE is_active = 1
     ");
+
     $total_assessments = $stmt->fetchColumn();
 
-    $stmt = $pdo->query("
-        SELECT COUNT(*) 
-        FROM results
-    ");
-    $total_results = $stmt->fetchColumn();
 
     $stmt = $pdo->query("
-        SELECT COUNT(*) 
+        SELECT COUNT(*)
+        FROM results
+    ");
+
+    $total_results = $stmt->fetchColumn();
+
+
+    $stmt = $pdo->query("
+        SELECT COUNT(*)
         FROM certificates
     ");
+
     $total_certificates = $stmt->fetchColumn();
+
+
+    /* =========================
+       Pass / Fail Statistics
+    ========================== */
+
+    $stmt = $pdo->query("
+        SELECT
+            SUM(
+                CASE
+                    WHEN percentage >= 60 THEN 1
+                    ELSE 0
+                END
+            ) AS pass_count,
+
+            SUM(
+                CASE
+                    WHEN percentage < 60 THEN 1
+                    ELSE 0
+                END
+            ) AS fail_count
+
+        FROM results
+    ");
+
+    $result_stats = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    $pass_count = (int) ($result_stats["pass_count"] ?? 0);
+    $fail_count = (int) ($result_stats["fail_count"] ?? 0);
+
 
 } catch (PDOException $e) {
 
@@ -55,6 +101,7 @@ try {
 ?>
 
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
@@ -65,11 +112,18 @@ try {
 
     <title>Admin Dashboard | Student Skill Portal</title>
 
+
+    <!-- Chart.js -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
     <style>
 
         * {
             box-sizing: border-box;
         }
+
 
         body {
             margin: 0;
@@ -78,189 +132,416 @@ try {
             color: #111827;
         }
 
+
+        /* =========================
+           Navbar
+        ========================== */
+
         .navbar {
+
             background: #1d4ed8;
+
             color: white;
+
             padding: 18px 40px;
+
             display: flex;
+
             justify-content: space-between;
+
             align-items: center;
         }
 
+
         .navbar h2 {
+
             margin: 0;
+
             font-size: 21px;
         }
 
+
         .admin-info {
+
             display: flex;
+
             align-items: center;
+
             gap: 15px;
         }
 
+
         .admin-name {
+
             font-size: 14px;
         }
 
+
         .logout {
+
             color: white;
+
             text-decoration: none;
+
             background: rgba(255, 255, 255, 0.15);
+
             padding: 9px 16px;
+
             border-radius: 6px;
         }
 
+
         .logout:hover {
+
             background: rgba(255, 255, 255, 0.25);
         }
 
+
+        /* =========================
+           Main Container
+        ========================== */
+
         .container {
+
             max-width: 1200px;
+
             margin: 40px auto;
+
             padding: 0 20px;
         }
 
+
+        /* =========================
+           Welcome Section
+        ========================== */
+
         .welcome {
+
             background: white;
+
             padding: 30px;
+
             border-radius: 14px;
+
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.06);
+
             margin-bottom: 25px;
         }
 
+
         .welcome h1 {
+
             margin: 0 0 10px;
+
             font-size: 30px;
         }
 
+
         .welcome p {
+
             margin: 0;
+
             color: #6b7280;
+
             line-height: 1.6;
         }
 
+
+        /* =========================
+           Error
+        ========================== */
+
+        .error {
+
+            background: #fee2e2;
+
+            color: #991b1b;
+
+            padding: 15px;
+
+            border-radius: 8px;
+
+            margin-bottom: 20px;
+        }
+
+
+        /* =========================
+           Statistics
+        ========================== */
+
         .stats {
+
             display: grid;
+
             grid-template-columns: repeat(5, 1fr);
+
             gap: 18px;
+
             margin-bottom: 30px;
         }
 
+
         .stat-card {
+
             background: white;
+
             padding: 22px;
+
             border-radius: 12px;
+
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.06);
-        }
 
-        .stat-icon {
-            font-size: 28px;
-            margin-bottom: 12px;
-        }
-
-        .stat-card h3 {
-            margin: 0;
-            font-size: 30px;
-            color: #2563eb;
-        }
-
-        .stat-card p {
-            margin: 6px 0 0;
-            color: #6b7280;
-            font-size: 14px;
-        }
-
-        .section-title {
-            margin: 0 0 18px;
-            font-size: 23px;
-        }
-
-        .modules {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-        }
-
-        .module {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.06);
             transition: transform 0.2s ease;
         }
 
-        .module:hover {
+
+        .stat-card:hover {
+
             transform: translateY(-3px);
         }
 
-        .module-icon {
-            font-size: 32px;
+
+        .stat-icon {
+
+            font-size: 28px;
+
             margin-bottom: 12px;
         }
 
+
+        .stat-card h3 {
+
+            margin: 0;
+
+            font-size: 30px;
+
+            color: #2563eb;
+        }
+
+
+        .stat-card p {
+
+            margin: 6px 0 0;
+
+            color: #6b7280;
+
+            font-size: 14px;
+        }
+
+
+        /* =========================
+           Analytics
+        ========================== */
+
+        .analytics-section {
+
+            margin-bottom: 35px;
+        }
+
+
+        .section-title {
+
+            margin: 0 0 18px;
+
+            font-size: 23px;
+        }
+
+
+        .analytics-grid {
+
+            display: grid;
+
+            grid-template-columns: 1fr 1fr;
+
+            gap: 20px;
+        }
+
+
+        .chart-card {
+
+            background: white;
+
+            padding: 25px;
+
+            border-radius: 12px;
+
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.06);
+        }
+
+
+        .chart-card h3 {
+
+            margin: 0 0 5px;
+
+            font-size: 19px;
+        }
+
+
+        .chart-card p {
+
+            margin: 0 0 20px;
+
+            color: #6b7280;
+
+            font-size: 14px;
+        }
+
+
+        .chart-container {
+
+            position: relative;
+
+            height: 300px;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+        }
+
+
+        /* =========================
+           Management Modules
+        ========================== */
+
+        .modules {
+
+            display: grid;
+
+            grid-template-columns: repeat(3, 1fr);
+
+            gap: 20px;
+        }
+
+
+        .module {
+
+            background: white;
+
+            padding: 25px;
+
+            border-radius: 12px;
+
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.06);
+
+            transition: transform 0.2s ease;
+        }
+
+
+        .module:hover {
+
+            transform: translateY(-3px);
+        }
+
+
+        .module-icon {
+
+            font-size: 32px;
+
+            margin-bottom: 12px;
+        }
+
+
         .module h3 {
+
             margin: 0 0 8px;
         }
 
+
         .module p {
+
             color: #6b7280;
+
             line-height: 1.5;
+
             min-height: 45px;
         }
 
+
         .module a {
+
             display: inline-block;
+
             margin-top: 8px;
+
             color: #2563eb;
+
             text-decoration: none;
+
             font-weight: bold;
         }
 
+
         .module a:hover {
+
             text-decoration: underline;
         }
 
-        .error {
-            background: #fee2e2;
-            color: #991b1b;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
+
+        /* =========================
+           Responsive
+        ========================== */
 
         @media (max-width: 1000px) {
 
             .stats {
+
                 grid-template-columns: repeat(2, 1fr);
             }
 
+
+            .analytics-grid {
+
+                grid-template-columns: 1fr;
+            }
+
+
             .modules {
+
                 grid-template-columns: repeat(2, 1fr);
             }
 
         }
 
+
         @media (max-width: 650px) {
 
             .navbar {
+
                 padding: 15px 20px;
             }
 
+
             .admin-info {
+
                 gap: 8px;
             }
 
+
             .admin-name {
+
                 display: none;
             }
 
+
             .container {
+
                 margin-top: 25px;
             }
 
+
             .stats,
-            .modules {
+            .modules,
+            .analytics-grid {
+
                 grid-template-columns: 1fr;
+            }
+
+
+            .welcome h1 {
+
+                font-size: 25px;
             }
 
         }
@@ -269,216 +550,697 @@ try {
 
 </head>
 
+
 <body>
+
+
+<!-- =========================
+     Navbar
+========================== -->
 
 <nav class="navbar">
 
-    <h2>Student Skill Portal</h2>
+    <h2>
+        Student Skill Portal
+    </h2>
+
 
     <div class="admin-info">
 
         <span class="admin-name">
-            👤 <?php echo htmlspecialchars($_SESSION["full_name"]); ?>
+
+            👤
+
+            <?php
+
+            echo htmlspecialchars($_SESSION["full_name"]);
+
+            ?>
+
         </span>
 
-        <a href="../auth/logout.php" class="logout">
+
+        <a
+            href="../auth/logout.php"
+            class="logout"
+        >
+
             Logout
+
         </a>
 
     </div>
 
 </nav>
 
+
+
+<!-- =========================
+     Main Container
+========================== -->
+
 <div class="container">
+
+
+    <!-- Welcome -->
 
     <div class="welcome">
 
-        <h1>Admin Dashboard</h1>
+        <h1>
+            Admin Dashboard
+        </h1>
 
         <p>
+
             Manage students, skills, assessments, results, and certificates
             from one centralized dashboard.
+
         </p>
 
     </div>
 
+
+
+    <!-- Error Message -->
+
     <?php if (isset($error_message)): ?>
 
         <div class="error">
-            <?php echo htmlspecialchars($error_message); ?>
+
+            <?php
+
+            echo htmlspecialchars($error_message);
+
+            ?>
+
         </div>
 
     <?php endif; ?>
 
+
+
+    <!-- =========================
+         Statistics Cards
+    ========================== -->
+
     <div class="stats">
 
+
+        <!-- Students -->
+
         <div class="stat-card">
 
-            <div class="stat-icon">👨‍🎓</div>
+            <div class="stat-icon">
+                👨‍🎓
+            </div>
 
             <h3>
-                <?php echo $total_students; ?>
+
+                <?php
+
+                echo $total_students;
+
+                ?>
+
             </h3>
 
-            <p>Students</p>
+            <p>
+                Students
+            </p>
 
         </div>
 
+
+
+        <!-- Skills -->
+
         <div class="stat-card">
 
-            <div class="stat-icon">📚</div>
+            <div class="stat-icon">
+                📚
+            </div>
 
             <h3>
-                <?php echo $total_skills; ?>
+
+                <?php
+
+                echo $total_skills;
+
+                ?>
+
             </h3>
 
-            <p>Active Skills</p>
+            <p>
+                Active Skills
+            </p>
 
         </div>
 
+
+
+        <!-- Assessments -->
+
         <div class="stat-card">
 
-            <div class="stat-icon">📝</div>
+            <div class="stat-icon">
+                📝
+            </div>
 
             <h3>
-                <?php echo $total_assessments; ?>
+
+                <?php
+
+                echo $total_assessments;
+
+                ?>
+
             </h3>
 
-            <p>Assessments</p>
+            <p>
+                Assessments
+            </p>
 
         </div>
 
+
+
+        <!-- Results -->
+
         <div class="stat-card">
 
-            <div class="stat-icon">📊</div>
+            <div class="stat-icon">
+                📊
+            </div>
 
             <h3>
-                <?php echo $total_results; ?>
+
+                <?php
+
+                echo $total_results;
+
+                ?>
+
             </h3>
 
-            <p>Results</p>
+            <p>
+                Results
+            </p>
 
         </div>
 
+
+
+        <!-- Certificates -->
+
         <div class="stat-card">
 
-            <div class="stat-icon">🏆</div>
+            <div class="stat-icon">
+                🏆
+            </div>
 
             <h3>
-                <?php echo $total_certificates; ?>
+
+                <?php
+
+                echo $total_certificates;
+
+                ?>
+
             </h3>
 
-            <p>Certificates</p>
+            <p>
+                Certificates
+            </p>
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- =========================
+         Analytics
+    ========================== -->
+
+    <div class="analytics-section">
+
+
+        <h2 class="section-title">
+
+            Performance Analytics
+
+        </h2>
+
+
+        <div class="analytics-grid">
+
+
+            <!-- Pass / Fail Chart -->
+
+            <div class="chart-card">
+
+                <h3>
+                    Pass vs Fail Results
+                </h3>
+
+                <p>
+                    Overview of student assessment results.
+                </p>
+
+
+                <div class="chart-container">
+
+                    <canvas id="resultChart"></canvas>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- Performance Summary -->
+
+            <div class="chart-card">
+
+                <h3>
+                    Result Summary
+                </h3>
+
+                <p>
+                    Current assessment performance statistics.
+                </p>
+
+
+                <div
+                    style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 20px;
+                        justify-content: center;
+                        height: 250px;
+                    "
+                >
+
+
+                    <div
+                        style="
+                            background: #eff6ff;
+                            padding: 22px;
+                            border-radius: 10px;
+                        "
+                    >
+
+                        <div
+                            style="
+                                color: #2563eb;
+                                font-size: 14px;
+                                margin-bottom: 5px;
+                            "
+                        >
+                            Total Results
+                        </div>
+
+                        <strong
+                            style="
+                                font-size: 28px;
+                                color: #1e3a8a;
+                            "
+                        >
+
+                            <?php
+
+                            echo $total_results;
+
+                            ?>
+
+                        </strong>
+
+                    </div>
+
+
+
+                    <div
+                        style="
+                            background: #f0fdf4;
+                            padding: 22px;
+                            border-radius: 10px;
+                        "
+                    >
+
+                        <div
+                            style="
+                                color: #15803d;
+                                font-size: 14px;
+                                margin-bottom: 5px;
+                            "
+                        >
+                            Passed
+                        </div>
+
+                        <strong
+                            style="
+                                font-size: 28px;
+                                color: #166534;
+                            "
+                        >
+
+                            <?php
+
+                            echo $pass_count;
+
+                            ?>
+
+                        </strong>
+
+                    </div>
+
+
+
+                    <div
+                        style="
+                            background: #fef2f2;
+                            padding: 22px;
+                            border-radius: 10px;
+                        "
+                    >
+
+                        <div
+                            style="
+                                color: #dc2626;
+                                font-size: 14px;
+                                margin-bottom: 5px;
+                            "
+                        >
+                            Failed
+                        </div>
+
+                        <strong
+                            style="
+                                font-size: 28px;
+                                color: #991b1b;
+                            "
+                        >
+
+                            <?php
+
+                            echo $fail_count;
+
+                            ?>
+
+                        </strong>
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
 
         </div>
 
     </div>
 
+
+
+    <!-- =========================
+         Management Modules
+    ========================== -->
+
     <h2 class="section-title">
+
         Management Modules
+
     </h2>
+
 
     <div class="modules">
 
+
+        <!-- Students -->
+
         <div class="module">
 
-            <div class="module-icon">👨‍🎓</div>
+            <div class="module-icon">
+                👨‍🎓
+            </div>
 
-            <h3>Manage Students</h3>
+            <h3>
+                Manage Students
+            </h3>
 
             <p>
+
                 View registered students and manage their accounts.
+
             </p>
 
             <a href="students.php">
+
                 Manage Students →
+
             </a>
 
         </div>
 
+
+
+        <!-- Skills -->
+
         <div class="module">
 
-            <div class="module-icon">📚</div>
+            <div class="module-icon">
+                📚
+            </div>
 
-            <h3>Manage Skills</h3>
+            <h3>
+                Manage Skills
+            </h3>
 
             <p>
+
                 Add, edit, and manage technical skills available on the portal.
+
             </p>
 
             <a href="skills.php">
+
                 Manage Skills →
+
             </a>
 
         </div>
 
+
+
+        <!-- Assessments -->
+
         <div class="module">
 
-            <div class="module-icon">📝</div>
+            <div class="module-icon">
+                📝
+            </div>
 
-            <h3>Assessments</h3>
+            <h3>
+                Assessments
+            </h3>
 
             <p>
+
                 Create and manage assessments for different skills.
+
             </p>
 
             <a href="assessments.php">
+
                 Manage Assessments →
+
             </a>
 
         </div>
 
+
+
+        <!-- Questions -->
+
         <div class="module">
 
-            <div class="module-icon">❓</div>
+            <div class="module-icon">
+                ❓
+            </div>
 
-            <h3>Questions</h3>
+            <h3>
+                Questions
+            </h3>
 
             <p>
+
                 Add and manage questions used in assessments.
+
             </p>
 
             <a href="questions.php">
+
                 Manage Questions →
+
             </a>
 
         </div>
 
+
+
+        <!-- Results -->
+
         <div class="module">
 
-            <div class="module-icon">📊</div>
+            <div class="module-icon">
+                📊
+            </div>
 
-            <h3>Results</h3>
+            <h3>
+                Results
+            </h3>
 
             <p>
+
                 View assessment performance and student results.
+
             </p>
 
             <a href="results.php">
+
                 View Results →
+
             </a>
 
         </div>
+
+
+
+        <!-- Certificates -->
 
         <div class="module">
 
-            <div class="module-icon">🏆</div>
+            <div class="module-icon">
+                🏆
+            </div>
 
-            <h3>Certificates</h3>
+            <h3>
+                Certificates
+            </h3>
 
             <p>
+
                 View and manage certificates issued to students.
+
             </p>
 
             <a href="certificates.php">
+
                 Manage Certificates →
+
             </a>
 
         </div>
 
+
     </div>
 
+
 </div>
+
+
+
+<!-- =========================
+     Chart.js
+========================== -->
+
+<script>
+
+    const passCount = <?php echo $pass_count; ?>;
+
+    const failCount = <?php echo $fail_count; ?>;
+
+
+    const resultCanvas =
+        document.getElementById("resultChart");
+
+
+    if (resultCanvas) {
+
+        new Chart(resultCanvas, {
+
+            type: "doughnut",
+
+            data: {
+
+                labels: [
+                    "Passed",
+                    "Failed"
+                ],
+
+                datasets: [
+
+                    {
+
+                        data: [
+                            passCount,
+                            failCount
+                        ],
+
+                        backgroundColor: [
+                            "#22c55e",
+                            "#ef4444"
+                        ],
+
+                        borderWidth: 0,
+
+                        hoverOffset: 8
+
+                    }
+
+                ]
+
+            },
+
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                plugins: {
+
+                    legend: {
+
+                        position: "bottom",
+
+                        labels: {
+
+                            padding: 20,
+
+                            font: {
+
+                                size: 14
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        });
+
+    }
+
+</script>
+
 
 </body>
 
